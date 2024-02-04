@@ -1,0 +1,130 @@
+version: '3'
+
+services:
+  yelb-ui:
+    image: mreferre/yelb-ui:0.7
+    ports:
+      - "80:80"
+    depends_on:
+      - yelb-appserver
+    networks:
+      - s7
+
+  yelb-appserver:
+    image: mreferre/yelb-appserver:0.5
+    depends_on:
+      - yelb-db
+      - redis-server
+    networks:
+      - s7
+
+  redis-server:
+    image: redis:4.0.2
+    volumes:
+      - redis.conf:/etc/redis/redis.conf
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    networks:
+      - s7
+
+  odilia-redis01:
+    image: redis:4.0.2
+    volumes:
+      - redis.conf1:/etc/redis/redis.conf
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    networks:
+      - s7
+
+  odilia-redis02:
+    image: redis:4.0.2
+    volumes:
+      - redis.conf2:/etc/redis/redis.conf
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    networks:
+      - s7
+
+  yelb-db:
+    image: mreferre/yelb-db:0.5
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - s7
+
+  odilia-db-replication01:
+    image: mreferre/yelb-db:0.5
+    volumes:
+      - db1:/var/lib/postgresql/data
+    networks:
+      - s7
+
+  odilia-db-replication02:
+    image: mreferre/yelb-db:0.5
+    volumes:
+      - db2:/var/lib/postgresql/data
+    networks:
+      - s7
+
+  odilia-db-replication03:
+    image: mreferre/yelb-db:0.5
+    volumes:
+      - db3:/var/lib/postgresql/data
+    networks:
+      - s7
+
+  odilia-redis-sentinel01:
+    image: redis:4.0.4
+    volumes:
+      - sentinel.conf1:/etc/redis/sentinel.conf
+    depends_on:
+      - redis-server
+      - odilia-redis01
+      - odilia-redis02
+    networks:
+      - s7
+
+  odilia-redis-sentinel02:
+    image: redis:4.0.4
+    volumes:
+      - sentinel.conf2:/etc/redis/sentinel.conf
+    depends_on:
+      - redis-server
+      - odilia-redis01
+      - odilia-redis02
+    networks:
+      - s7
+
+  odilia-redis-sentinel03:
+    image: redis:4.0.4
+    volumes:
+      - sentinel.conf3:/etc/redis/sentinel.conf
+    depends_on:
+      - redis-server
+      - odilia-redis01
+      - odilia-redis02
+    networks:
+      - s7
+
+networks:
+  s7:
+    driver: bridge
+
+volumes:
+  sentinel.conf3:
+    driver: local
+  sentinel.conf2:
+    driver: local
+  sentinel.conf1:
+    driver: local
+  redis.conf:
+    driver: local
+  redis.conf1:
+    driver: local 
+  redis.conf2:
+    driver: local
+  db:
+    driver: local
+  db1:
+    driver: local
+  db2:
+    driver: local
+  db3:
+    driver: local
