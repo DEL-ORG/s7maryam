@@ -1,0 +1,106 @@
+version: '3'
+
+services:
+  petclinic:
+    build:
+      context: ./
+      dockerfile: Dockerfile.multi
+    environment:
+      MYSQL_USER: petclinic
+      MYSQL_PASSWORD: petclinic
+      MYSQL_DATABASE: petclinic
+
+    ports:
+      - "8000:8000"
+      - "8080:8080"
+    networks:
+      - petclinic-network
+    depends_on:
+      - redis-0
+      - mysql
+
+  redis-0:
+    image: redis:4.0.2
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-0-redis.conf:/etc/redis/redis.conf
+    networks:
+      - petclinic-network
+
+  redis-1:
+    image: redis:4.0.2
+    volumes:
+      - redis-1-redis.conf:/etc/redis/redis.conf
+    command: ["redis-server", "/etc/redis/redis.conf", "--slaveof", "redis-0", "6379"]
+    networks:
+      - petclinic-network
+
+  redis-2:
+    image: redis:4.0.2
+    volumes:
+      - redis-2-redis.conf:/etc/redis/redis.conf
+    command: ["redis-server", "/etc/redis/redis.conf", "--slaveof", "redis-0", "6379"]
+    networks:
+      - petclinic-network
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: 
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+      MYSQL_USER: petclinic
+      MYSQL_PASSWORD: petclinic
+      MYSQL_DATABASE: petclinic
+    volumes:
+      - mysql_config:/etc/mysql/conf.d
+    networks:
+      - petclinic-network
+
+  sentinel-0:
+    image: redis:4.0.2
+    volumes:
+      - sentinel-0-sentinel.conf:/etc/redis/sentinel.conf
+    command: ["redis-server", "/etc/redis/sentinel.conf", "--sentinel"]
+    ports:
+      - "26379:26379"
+    networks:
+      - petclinic-network
+    depends_on:
+      - redis-0
+
+  sentinel-1:
+    image: redis:4.0.2
+    ports:
+      - "26380:26379"
+    volumes:
+      - sentinel-1-sentinel.conf:/etc/redis/sentinel.conf
+    command: ["redis-server", "/etc/redis/sentinel.conf", "--sentinel"]
+    networks:
+      - petclinic-network
+    depends_on:
+      - redis-0
+
+  sentinel-2:
+    image: redis:4.0.2
+    ports:
+      - "26381:26379"
+    volumes:
+      - sentinel-2-sentinel.conf:/etc/redis/sentinel.conf
+    command: ["redis-server", "/etc/redis/sentinel.conf", "--sentinel"]
+    depends_on:
+      - redis-0
+    networks:
+      - petclinic-network
+
+networks:
+  petclinic-network:
+
+volumes:
+  sentinel-1-sentinel.conf:
+  sentinel-2-sentinel.conf:
+  sentinel-0-sentinel.conf:
+  redis-0-redis.conf:
+  redis-1-redis.conf:
+  redis-2-redis.conf:
+  mysql_config:
